@@ -57,6 +57,8 @@ STRATUM_DPDK = 'start-stratum.sh'
 STRATUM_INIT_PIPELINE = '/root/dummy.json'
 MAX_CONTROLLERS_PER_NODE = 10
 BMV2_LOG_LINES = 5
+# Incremental default gRPC port.
+nextGrpcPort = 50001
 
 
 def writeToFile(path, value):
@@ -134,15 +136,17 @@ class StratumBmv2Switch(Switch):
     # be running.
     mininet_exception = multiprocessing.Value('i', 0)
 
-    nextGrpcPort = 50001
-
     def __init__(self, name, json=STRATUM_INIT_PIPELINE, loglevel="warn",
                  cpuport=DEFAULT_CPU_PORT, pipeconf=DEFAULT_PIPECONF,
-                 onosdevid=None, adminstate=True,
+                 onosdevid=None, adminstate=True, grpcPort=None,
                  **kwargs):
         Switch.__init__(self, name, **kwargs)
-        self.grpcPort = StratumBmv2Switch.nextGrpcPort
-        StratumBmv2Switch.nextGrpcPort += 1
+        if grpcPort is not None:
+          self.grpcPort = grpcPort
+        else:
+          global nextGrpcPort
+          self.grpcPort = nextGrpcPort
+          nextGrpcPort += 1
         self.cpuPort = cpuport
         self.json = json
         self.loglevel = loglevel
@@ -306,15 +310,17 @@ class StratumDpdkSwitch(Switch):
     # be running.
     mininet_exception = multiprocessing.Value('i', 0)
 
-    nextGrpcPort = 50001
-
     def __init__(self, name, json=STRATUM_INIT_PIPELINE, loglevel="warn",
                  cpuport=DEFAULT_CPU_PORT, pipeconf=DEFAULT_PIPECONF,
-                 onosdevid=None, adminstate=True,
+                 onosdevid=None, adminstate=True, grpcPort=None,
                  **kwargs):
         Switch.__init__(self, name, **kwargs)
-        self.grpcPort = StratumDpdkSwitch.nextGrpcPort
-        StratumDpdkSwitch.nextGrpcPort += 1
+        if grpcPort is not None:
+          self.grpcPort = grpcPort
+        else:
+          global nextGrpcPort
+          self.grpcPort = nextGrpcPort
+          nextGrpcPort += 1
         self.cpuPort = cpuport
         self.json = json
         self.loglevel = loglevel
@@ -486,8 +492,6 @@ nodes {{
     def stop(self, deleteIntfs=True):
         """Terminate switch."""
         self.stopped = True
-        # if self.socketpopen:
-          #
         if self.dpdkpopen is not None:
             if self.dpdkpopen.poll() is None:
                 self.dpdkpopen.terminate()
